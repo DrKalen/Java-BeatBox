@@ -1,5 +1,6 @@
 import java.awt.*;
 import javax.swing.*;
+import java.io.*;
 import javax.sound.midi.*;
 import java.util.*;
 import java.awt.event.*;
@@ -45,6 +46,14 @@ public class BeatBox {
 	JButton downTempo = new JButton("Tempo Down");
 	downTempo.addActionListener(new MyDownTempoListener());
 	buttonBox.add(downTempo);
+
+	JButton saveIt = new JButton("Serialize It");
+	saveIt.addActionListener(new MySendListener());
+	buttonBox.add(saveIt);
+
+	JButton restore = new JButton("Restore");
+	restore.addActionListener(new MyReadInListener());
+	buttonBox.add(restore);
 
 	Box nameBox = new Box(BoxLayout.Y_AXIS);
 	for (int i = 0; i < 16; i++) {
@@ -98,7 +107,7 @@ public class BeatBox {
 	  int key = instruments[i];	
 	
 	  for (int j = 0; j < 16; j++) {
-		JCheckBox jc = checkboxList.get(j + 16*i);
+		JCheckBox jc = (JCheckBox) checkboxList.get(j + 16*i);
 		if(jc.isSelected()) {
 		  trackList[j] = key;
 		} else {
@@ -107,7 +116,7 @@ public class BeatBox {
 	  } //close inner loop
 
 	  makeTracks(trackList);
-	  track.add(makeEvent(176,1,127,0,16));
+	  // track.add(makeEvent(176,1,127,0,16));
 	} //close outer
 	
 	track.add(makeEvent(192,9,1,0,15));
@@ -120,6 +129,8 @@ public class BeatBox {
 
 	} catch(Exception e) {e.printStackTrace(); }
   } // close buildTrackAndStart method
+
+//=====================================================inner classes: listeners
 
   public class MyStartListener implements ActionListener {
 	public void actionPerformed(ActionEvent a) {
@@ -147,6 +158,58 @@ public class BeatBox {
 	}	
   } // close inner class
 
+  public class MySendListener implements ActionListener {
+	public void actionPerformed(ActionEvent a) {
+	  // make an arrayList of just the STATE of the checkboxes
+	  boolean[] checkboxState = new boolean[256];
+
+	  for (int i = 0; i < 256; i++) {
+		JCheckBox check = (JCheckBox) checkboxList.get(i);
+		if (check.isSelected()) {
+		  checkboxState[i] = true;
+		}
+	  }
+
+	  try {
+		FileOutputStream fileStream = new FileOutputStream(new File("Checkbox.ser"));
+		ObjectOutputStream os = new ObjectOutputStream(fileStream);
+		os.writeObject(checkboxState);
+	  } catch(Exception ex) {
+		ex.printStackTrace();
+	  }
+	} // close method
+  } // close inner class
+
+  public class MyReadInListener implements ActionListener {
+	public void actionPerformed(ActionEvent a) {
+
+	  boolean[] checkboxState = null;
+	  try {
+		FileInputStream fileIn = new FileInputStream(new File("Checkbox.ser"));
+		ObjectInputStream is = new ObjectInputStream(fileIn);
+		checkboxState = (boolean[]) is.readObject();
+	  } catch(Exception ex) {
+		ex.printStackTrace();
+	  }
+
+	  // reset the sequence to be what was read
+	  for (int i = 0; i < 256; i++) {
+		JCheckBox check = (JCheckBox) checkboxList.get(i);
+		if (checkboxState[i]) {
+		  check.setSelected(true);
+		} else {
+		  check.setSelected(false);
+		}
+	  } 
+	
+	  //now stop sequence and restart
+	  sequencer.stop();
+	  buildTrackAndStart();
+	}//close method
+  } //close inner class
+
+// =================================================================
+
   public void makeTracks(int[] list) {
 	for (int i = 0; i < 16; i++) {
 	  int key = list[i];
@@ -164,7 +227,7 @@ public class BeatBox {
 	  ShortMessage a = new ShortMessage();
 	  a.setMessage(comd, chan, one, two);
 	  event = new MidiEvent(a, tick);
-	} catch (Exception e) {e.printStackTrace();}
+	} catch(Exception e) {e.printStackTrace();}
 	  return event;
   }
 } // close class
