@@ -56,8 +56,10 @@ public class BeatBox {
 	buttonBox.add(restore);
 
 	Box nameBox = new Box(BoxLayout.Y_AXIS);
+	nameBox.add(Box.createRigidArea(new Dimension(0,8)));
 	for (int i = 0; i < 16; i++) {
 	  nameBox.add(new Label(instrumentNames[i]));
+	  nameBox.add(Box.createRigidArea(new Dimension(0,10)));
 	}
 
 	background.add(BorderLayout.EAST, buttonBox);
